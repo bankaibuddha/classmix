@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Team Mixer</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>Team Mixer</h1>
+  <span class="privacy-badge" title="All data stays on this device. Nothing is ever sent anywhere.">🔒 On-device only</span>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab active" data-tab="teams" role="tab" aria-selected="true">Make Teams</button>
+  <button class="tab" data-tab="classes" role="tab" aria-selected="false">Classes</button>
+</nav>
+
+<!-- ============ MAKE TEAMS ============ -->
+<main id="view-teams" class="view">
+  <!-- Primary CTA lives above the scroll area, always visible -->
+  <div class="cta-bar">
+    <button id="btn-generate" class="btn-primary big">🎲 Shake Teams</button>
+  </div>
+
+  <div class="scroll-area">
+    <section class="panel">
+      <h2>Who's playing?</h2>
+      <p class="hint">Tap classes to include them. Mix as many as you like.</p>
+      <div id="class-chips" class="chip-row"></div>
+      <p id="pool-count" class="pool-count"></p>
+      <details id="absent-details">
+        <summary>Mark absent students</summary>
+        <div id="absent-list" class="absent-list"></div>
+      </details>
+    </section>
+
+    <section class="panel">
+      <h2>Team setup</h2>
+      <div class="seg-row">
+        <button class="seg active" data-mode="count"># of Teams</button>
+        <button class="seg" data-mode="size">Players per Team</button>
+      </div>
+      <div class="stepper">
+        <button id="step-down" class="step-btn" aria-label="decrease">−</button>
+        <span id="step-value">2</span>
+        <button id="step-up" class="step-btn" aria-label="increase">+</button>
+      </div>
+      <label class="check-row">
+        <input type="checkbox" id="opt-spread">
+        <span>Spread each class evenly across teams</span>
+      </label>
+    </section>
+
+    <section id="results" class="results hidden">
+      <div class="results-head">
+        <h2>Teams</h2>
+        <button id="btn-shake-enable" class="btn-ghost hidden">Enable shake-to-reshuffle</button>
+      </div>
+      <div id="team-cards" class="team-grid"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ============ CLASSES ============ -->
+<main id="view-classes" class="view hidden">
+  <div class="cta-bar">
+    <button id="btn-add-class" class="btn-primary big">＋ New Class</button>
+  </div>
+  <div class="scroll-area">
+    <div id="class-list" class="class-list"></div>
+    <section class="panel backup">
+      <h2>Backup</h2>
+      <p class="hint">Data lives only in this browser. Export a file to move or back it up.</p>
+      <div class="row-gap">
+        <button id="btn-export" class="btn-ghost">Export file</button>
+        <button id="btn-import" class="btn-ghost">Import file</button>
+        <input type="file" id="import-file" accept=".json" class="hidden">
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- ============ CLASS EDITOR (overlay) ============ -->
+<div id="editor" class="overlay hidden">
+  <div class="sheet">
+    <div class="sheet-head">
+      <input id="editor-name" class="name-input" placeholder="Class name">
+      <button id="editor-close" class="btn-ghost">Done</button>
+    </div>
+    <div class="add-student-row">
+      <input id="student-input" placeholder="Add name — or paste a whole list" autocomplete="off">
+      <button id="btn-add-student" class="btn-primary">Add</button>
+    </div>
+    <ul id="student-list" class="student-list"></ul>
+    <button id="btn-delete-class" class="btn-danger">Delete this class</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
