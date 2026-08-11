@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "teammixer-v1";
+const CACHE = "classmix-v1";
 const ASSETS = ["./", "index.html", "styles.css", "app.js", "manifest.webmanifest", "icon.svg"];
 
 self.addEventListener("install", (e) => {

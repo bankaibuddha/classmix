@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- storage ---------- */
-const KEY = "teammixer.v1";
+const KEY = "classmix.v1";
 
 function load() {
   try {
@@ -318,7 +318,7 @@ $("btn-export").addEventListener("click", () => {
     { type: "application/json" });
   const a = el("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "team-mixer-backup.json";
+  a.download = "classmix-backup.json";
   a.click();
   URL.revokeObjectURL(a.href);
 });
@@ -342,7 +342,7 @@ $("import-file").addEventListener("change", async (e) => {
     save();
     render();
   } catch {
-    alert("That file doesn't look like a Team Mixer backup.");
+    alert("That file doesn't look like a ClassMix backup.");
   }
   e.target.value = "";
 });

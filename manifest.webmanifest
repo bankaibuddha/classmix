@@ -1,6 +1,6 @@
 {
-  "name": "Team Mixer",
-  "short_name": "Team Mixer",
+  "name": "ClassMix",
+  "short_name": "ClassMix",
   "description": "Random team picker. Mix classes. All data stays on your device.",
   "start_url": ".",
   "display": "standalone",
