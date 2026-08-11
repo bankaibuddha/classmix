@@ -313,6 +313,24 @@ details summary {
   border-bottom: 1px solid var(--border);
   font-size: 0.95rem;
 }
+.scan-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.scan-row .hint { margin: 0; }
+.sheet-title { font-size: 1.1rem; }
+#scan-text {
+  flex: 1;
+  min-height: 200px;
+  resize: none;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  outline: none;
+}
+
 .student-actions { display: flex; align-items: center; gap: 8px; }
 .jump-rating { display: flex; gap: 4px; }
 .jump-btn {

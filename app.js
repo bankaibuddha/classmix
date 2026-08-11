@@ -328,6 +328,73 @@ $("btn-delete-class").addEventListener("click", () => {
   render();
 });
 
+/* ---------- scan roster (photo OCR, fully on-device) ---------- */
+let ocrWorkerPromise = null;
+function getOcrWorker() {
+  if (!ocrWorkerPromise) {
+    // absolute URLs: worker-relative resolution breaks on subpath hosting
+    const base = (p) => new URL(p, location.href).href;
+    ocrWorkerPromise = Tesseract.createWorker("eng", 1, {
+      workerPath: base("vendor/tesseract/worker.min.js"),
+      corePath: base("vendor/tesseract/core"),
+      langPath: base("vendor/tesseract"),
+      gzip: true,
+      logger: (m) => {
+        if (m.status === "recognizing text") {
+          setScanStatus(`Reading… ${Math.round(m.progress * 100)}%`);
+        }
+      },
+    });
+  }
+  return ocrWorkerPromise;
+}
+
+function setScanStatus(text) {
+  const s = $("scan-status");
+  s.textContent = text;
+  s.classList.toggle("hidden", !text);
+  $("btn-scan-roster").disabled = Boolean(text);
+}
+
+function parseRosterText(text) {
+  // one name per printed line; strip roster numbering / bullets / trailing
+  // junk, keep only lines that still contain at least two letters
+  return text
+    .split(/\n+/)
+    .map((l) => l.replace(/^[\s\d.\-–—•)(*:_|]+/, "").replace(/[\s\d.\-–—•)(*:_|]+$/, "").trim())
+    .filter((l) => /\p{L}.*\p{L}/u.test(l));
+}
+
+$("btn-scan-roster").addEventListener("click", () => $("scan-file").click());
+$("scan-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  setScanStatus("Reading photo…");
+  try {
+    const worker = await getOcrWorker();
+    const { data } = await worker.recognize(file);
+    setScanStatus("");
+    const names = parseRosterText(data.text);
+    if (names.length === 0) {
+      alert("Couldn't find any names in that photo. Try a closer, well-lit shot.");
+      return;
+    }
+    $("scan-text").value = names.join("\n");
+    $("scan-review").classList.remove("hidden");
+  } catch (err) {
+    setScanStatus("");
+    ocrWorkerPromise = null; // broken worker -> rebuild on retry
+    alert("Couldn't read that photo. Try again with a closer, well-lit shot.");
+  }
+});
+$("btn-scan-add").addEventListener("click", () => {
+  // one name per line here — protect "Last, First" from the comma splitter
+  addStudents($("scan-text").value.replace(/[,;]\s*/g, " "));
+  $("scan-review").classList.add("hidden");
+});
+$("scan-cancel").addEventListener("click", () => $("scan-review").classList.add("hidden"));
+
 /* ---------- backup ---------- */
 $("btn-export").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify({ classes: state.classes }, null, 2)],

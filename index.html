@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<!-- connect-src/script-src allow same-origin + wasm only, for the on-device OCR engine; no external host is ever reachable -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; form-action 'none'; base-uri 'none'">
 <meta name="theme-color" content="#4f46e5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -101,11 +102,30 @@
       <button id="btn-add-student" class="btn-primary">Add</button>
     </div>
     <p class="hint">Tap 1–3 to rate jump ability (3 = most capable). Tap again to clear.</p>
+    <div class="scan-row">
+      <button id="btn-scan-roster" class="btn-ghost">📷 Scan a paper roster</button>
+      <input type="file" id="scan-file" accept="image/*" capture="environment" class="hidden">
+      <span id="scan-status" class="hint hidden"></span>
+    </div>
     <ul id="student-list" class="student-list"></ul>
     <button id="btn-delete-class" class="btn-danger">Delete this class</button>
   </div>
 </div>
 
+<!-- ============ SCAN REVIEW (overlay) ============ -->
+<div id="scan-review" class="overlay hidden">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 class="sheet-title">Check the names</h2>
+      <button id="scan-cancel" class="btn-ghost">Cancel</button>
+    </div>
+    <p class="hint">One name per line. Fix anything the camera misread, then add. The photo never leaves this device.</p>
+    <textarea id="scan-text" spellcheck="false"></textarea>
+    <button id="btn-scan-add" class="btn-primary big">Add these students</button>
+  </div>
+</div>
+
+<script src="vendor/tesseract/tesseract.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
