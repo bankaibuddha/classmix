@@ -35,7 +35,11 @@ device, ever. Owner: the Commander. Drafted by Control 2026-08-10.
 
 - CSV / paste-from-spreadsheet class import
 - Skill/level tiers with balanced draft (Team Shake parity, done better)
+  — first tier shipped 2026-08-11: per-student jump ability, 1–3 scale,
+  local-only like everything else; balanced draft still pending
 - Score keeping per generated team (session-only, same privacy rule)
+- Tournaments & PE game modes — brackets, rotations, court assignments
+- House PE standards in-app (reference benchmarks, e.g. jumping)
 - Ship on the App Store under the ClassMix name
 
 ## Graduation log

@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "classmix-v1";
+const CACHE = "classmix-v2";
 const ASSETS = ["./", "index.html", "styles.css", "app.js", "manifest.webmanifest", "icon.svg"];
 
 self.addEventListener("install", (e) => {

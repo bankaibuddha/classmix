@@ -258,13 +258,29 @@ function renderStudents() {
   for (const s of c.students) {
     const li = el("li");
     li.append(el("span", null, s.name));
+    const actions = el("div", "student-actions");
+    const rating = el("div", "jump-rating");
+    for (const v of [1, 2, 3]) {
+      const b = el("button", "jump-btn", String(v));
+      if (s.jump === v) b.classList.add("active");
+      b.title = `Jump ability ${v} of 3`;
+      b.setAttribute("aria-label", `${s.name}: jump ability ${v} of 3`);
+      b.setAttribute("aria-pressed", s.jump === v ? "true" : "false");
+      b.addEventListener("click", () => {
+        s.jump = s.jump === v ? undefined : v; // tap again to clear
+        save();
+        renderStudents();
+      });
+      rating.append(b);
+    }
     const rm = el("button", "remove-btn", "✕");
     rm.addEventListener("click", () => {
       c.students = c.students.filter((x) => x.id !== s.id);
       save();
       renderStudents();
     });
-    li.append(rm);
+    actions.append(rating, rm);
+    li.append(actions);
     ul.append(li);
   }
 }
@@ -336,7 +352,11 @@ $("import-file").addEventListener("change", async (e) => {
         name: c.name,
         students: c.students
           .filter((s) => typeof s.name === "string")
-          .map((s) => ({ id: uid(), name: s.name })),
+          .map((s) => {
+            const st = { id: uid(), name: s.name };
+            if ([1, 2, 3].includes(s.jump)) st.jump = s.jump;
+            return st;
+          }),
       });
     }
     save();
