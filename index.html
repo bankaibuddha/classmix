@@ -21,6 +21,7 @@
 
 <nav class="tabs" role="tablist">
   <button class="tab active" data-tab="teams" role="tab" aria-selected="true">Make Teams</button>
+  <button class="tab" data-tab="draw" role="tab" aria-selected="false">Club Draw</button>
   <button class="tab" data-tab="classes" role="tab" aria-selected="false">Classes</button>
 </nav>
 
@@ -70,6 +71,79 @@
   </div>
 </main>
 
+<!-- ============ CLUB DRAW ============ -->
+<main id="view-draw" class="view hidden">
+  <div class="cta-bar">
+    <button id="btn-draw" class="btn-primary big">🎟️ Run the Draw</button>
+  </div>
+
+  <div class="scroll-area">
+    <section class="panel">
+      <h2>Who applied?</h2>
+      <p class="hint">Tap the classes the applicants came from.</p>
+      <div id="draw-chips" class="chip-row"></div>
+      <p id="draw-count" class="pool-count"></p>
+    </section>
+
+    <section class="panel">
+      <h2>How many spots?</h2>
+      <div class="stepper">
+        <button id="spots-down" class="step-btn" aria-label="fewer spots">−</button>
+        <span id="spots-value">10</span>
+        <button id="spots-up" class="step-btn" aria-label="more spots">+</button>
+      </div>
+      <p id="spots-note" class="hint"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Fairness rules</h2>
+
+      <label class="check-row">
+        <input type="checkbox" id="opt-seed">
+        <span>Auditable draw (published seed)</span>
+      </label>
+      <div id="seed-box" class="sub-box hidden">
+        <p class="hint">Fix the applicant list first, then get a number from
+        outside — dice rolled in front of the group, a date, a lottery
+        number. Type it in. Anyone can re-run the draw with the same seed
+        and roster and get the identical result.</p>
+        <input id="seed-input" placeholder="e.g. dice 4-2-6" autocomplete="off">
+        <p id="roster-fp" class="fingerprint"></p>
+      </div>
+
+      <label class="check-row">
+        <input type="checkbox" id="opt-tiers">
+        <span>Priority tiers (some groups drawn first)</span>
+      </label>
+      <div id="tiers-box" class="sub-box hidden">
+        <p class="hint">Tier 1 is drawn first and fills spots before tier 2.
+        Equal tiers compete on equal terms.</p>
+        <div id="tier-list"></div>
+      </div>
+
+      <label class="check-row">
+        <input type="checkbox" id="opt-draw-spread">
+        <span>Spread across classes (no single class takes over)</span>
+      </label>
+
+      <label class="check-row">
+        <input type="checkbox" id="opt-waitlist" checked>
+        <span>Show ranked waitlist</span>
+      </label>
+    </section>
+
+    <section id="draw-results" class="results hidden">
+      <div class="results-head">
+        <h2>Result</h2>
+        <button id="btn-copy-draw" class="btn-ghost">Copy</button>
+      </div>
+      <div id="draw-receipt" class="receipt"></div>
+      <div id="draw-picked"></div>
+      <div id="draw-waitlist"></div>
+    </section>
+  </div>
+</main>
+
 <!-- ============ CLASSES ============ -->
 <main id="view-classes" class="view hidden">
   <div class="cta-bar">
@@ -106,5 +180,6 @@
 </div>
 
 <script src="app.js"></script>
+<script src="draw.js"></script>
 </body>
 </html>

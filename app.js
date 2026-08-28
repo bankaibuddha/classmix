@@ -45,8 +45,9 @@ document.querySelectorAll(".tab").forEach((btn) => {
       b.classList.toggle("active", b === btn);
       b.setAttribute("aria-selected", b === btn ? "true" : "false");
     });
-    $("view-teams").classList.toggle("hidden", btn.dataset.tab !== "teams");
-    $("view-classes").classList.toggle("hidden", btn.dataset.tab !== "classes");
+    for (const name of ["teams", "draw", "classes"]) {
+      $(`view-${name}`).classList.toggle("hidden", btn.dataset.tab !== name);
+    }
     render();
   });
 });
@@ -353,6 +354,7 @@ function render() {
   renderAbsent();
   renderPoolCount();
   renderClassList();
+  if (typeof renderDraw === "function") renderDraw();
   $("step-value").textContent = state.value;
   $("opt-spread").checked = state.spread;
   document.querySelectorAll(".seg").forEach((b) =>

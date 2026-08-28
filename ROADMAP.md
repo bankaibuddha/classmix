@@ -11,6 +11,14 @@ device, ever. Owner: the Commander. Drafted by Control 2026-08-10.
   (passed 2026-08-10: 12 students, 3 teams, 2-per-class spread verified)
 - [x] Public hosting — gate: Pages returns 200 on all 6 assets
   (passed 2026-08-10: https://bankaibuddha.github.io/classmix/)
+- [x] Club Draw — second mode shipped 2026-08-27: lottery for
+  oversubscribed clubs, with four fairness toggles (published seed +
+  roster fingerprint, priority tiers, class spread, ranked waitlist) —
+  gate: live property tests in the browser, all six passed (same seed
+  reproduces exactly; different seed differs; unseeded varies, proving
+  the toggle swaps engines; spread held the ceil(spots/classes) cap at
+  3/4/3; tier 1 filled every spot before tier 2; no duplicates and
+  picks+waitlist cover the pool exactly)
 - [ ] Mac dev handoff — gate: clone builds and serves on the Mac,
   first Mac-side commit pushed
 - [ ] Real-device proof — gate: Add-to-Home-Screen on the iPad, offline
