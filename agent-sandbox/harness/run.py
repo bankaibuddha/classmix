@@ -277,7 +277,55 @@ def preflight(image: str, ollama_url: str, model: str) -> dict:
 # -- run ----------------------------------------------------------------
 
 
-def seed_workspace(workspace: Path, charter_text: str, seed: Path | None) -> None:
+def copy_seed(seed: Path, workspace: Path, tracked_only: bool = True) -> tuple[int, str]:
+    """Copy a seed directory into the workspace. Returns (file count, method).
+
+    When the seed is a git repository, copy ONLY the files git tracks.
+
+    This is not a tidiness preference, it is the point. A working clone holds
+    exactly what its .gitignore exists to keep out of version control: .env
+    files, API tokens, local databases, scraped caches, credentials. Those are
+    the last things that should be handed to an agent running unattended, and
+    "copy the directory, skipping a few well-known names" hands all of them
+    over while looking careful. The tracked set is the set the operator has
+    already decided is safe to publish, so that is the set the sandbox gets.
+
+    The tradeoff, stated because it will bite someone: a file that is new and
+    not yet added to git is invisible to the agent. Commit it first, or pass
+    --seed-all to fall back to a filtered directory copy.
+    """
+    probe = subprocess.run(
+        ["git", "-C", str(seed), "rev-parse", "--is-inside-work-tree"],
+        capture_output=True, text=True,
+    )
+    is_repo = probe.returncode == 0 and probe.stdout.strip() == "true"
+
+    workspace.mkdir(parents=True, exist_ok=True)
+    if not (tracked_only and is_repo):
+        shutil.copytree(seed, workspace, dirs_exist_ok=True, ignore=IGNORED_SEED)
+        count = sum(1 for p in workspace.rglob("*") if p.is_file())
+        return count, "directory copy (filtered)" if not is_repo else "directory copy (--seed-all)"
+
+    listing = subprocess.run(
+        ["git", "-C", str(seed), "ls-files", "-z"],
+        capture_output=True, text=True, check=True,
+    )
+    count = 0
+    for name in listing.stdout.split("\0"):
+        if not name:
+            continue
+        source = seed / name
+        if not source.is_file():  # submodule entries, deleted-but-tracked
+            continue
+        destination = workspace / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+        count += 1
+    return count, "git-tracked files only"
+
+
+def seed_workspace(workspace: Path, charter_text: str, seed: Path | None,
+                   tracked_only: bool = True) -> None:
     """Build the disposable workspace. The seed is copied, never mounted."""
     workspace.mkdir(parents=True, exist_ok=True)
     if seed is not None:
@@ -289,9 +337,10 @@ def seed_workspace(workspace: Path, charter_text: str, seed: Path | None) -> Non
                 f"refusing seed {seed}: it contains or is contained by the run "
                 "workspace, which would copy a directory into itself"
             )
-        # copytree, not a bind mount. The agent gets a copy and the original
-        # is not reachable from inside the container at all.
-        shutil.copytree(seed, workspace, dirs_exist_ok=True, ignore=IGNORED_SEED)
+        # A copy, never a bind mount. The original is not reachable from
+        # inside the container at all.
+        count, method = copy_seed(seed, workspace, tracked_only)
+        print(f"seed:      {count} files from {seed} ({method})")
 
     state = workspace / ".agent"
     state.mkdir(exist_ok=True)
@@ -387,7 +436,12 @@ def run(args: argparse.Namespace) -> int:
     socket_dir = registry.make()
     socket_path = socket_dir / "model.sock"
 
-    seed_workspace(workspace, charter_text, Path(args.seed).resolve() if args.seed else None)
+    seed_workspace(
+        workspace,
+        charter_text,
+        Path(args.seed).resolve() if args.seed else None,
+        tracked_only=not args.seed_all,
+    )
 
     broker_journal = run_dir / "broker.jsonl"
     broker_cmd = [
@@ -651,6 +705,73 @@ class SeedTests(unittest.TestCase):
         config = (workspace / ".git" / "config").read_text()
         self.assertNotIn("github.com", config)
 
+    def make_repo_seed(self) -> Path:
+        """A seed shaped like a real working clone: tracked code plus the
+        untracked, gitignored things a clone actually accumulates."""
+        seed = self.base / "repo"
+        (seed / "fetchers").mkdir(parents=True)
+        (seed / "fetchers" / "fetch.py").write_text("# tracked code\n")
+        (seed / "README.md").write_text("# tracked docs\n")
+        (seed / ".gitignore").write_text("store/\n*.sqlite\n.env\n")
+
+        # The things .gitignore exists to keep out of version control.
+        (seed / ".env").write_text("NTFY_TOPIC=real-secret-topic\n")
+        (seed / "listings.sqlite").write_text("binary-ish database contents\n")
+        (seed / "store" / "raw").mkdir(parents=True)
+        (seed / "store" / "raw" / "cached.raw").write_text("scraped page contents\n")
+
+        for args in (["init", "-q", "-b", "main"], ["add", "-A"],
+                     ["-c", "user.name=t", "-c", "user.email=t@t",
+                      "commit", "-q", "-m", "initial"]):
+            subprocess.run(["git", "-C", str(seed), *args], check=True,
+                           capture_output=True)
+        return seed
+
+    def test_untracked_secrets_never_reach_the_sandbox(self):
+        # The whole reason copy_seed prefers git: a filtered directory copy
+        # would hand an unattended agent the .env, the local database and the
+        # scraped cache, while looking careful because it skipped .git.
+        seed = self.make_repo_seed()
+        workspace = self.base / "runs" / "10" / "workspace"
+        seed_workspace(workspace, "charter", seed)
+
+        self.assertTrue((workspace / "fetchers" / "fetch.py").is_file())
+        self.assertTrue((workspace / "README.md").is_file())
+        for leaked in (".env", "listings.sqlite", "store/raw/cached.raw", "store"):
+            self.assertFalse(
+                (workspace / leaked).exists(),
+                f"gitignored {leaked} must not reach the sandbox",
+            )
+        # And the secret is nowhere in the workspace at all, under any name.
+        blob = "".join(
+            p.read_text(errors="replace")
+            for p in workspace.rglob("*")
+            if p.is_file() and ".git/" not in str(p)
+        )
+        self.assertNotIn("real-secret-topic", blob)
+
+    def test_seed_all_opts_back_into_copying_everything(self):
+        seed = self.make_repo_seed()
+        workspace = self.base / "runs" / "11" / "workspace"
+        seed_workspace(workspace, "charter", seed, tracked_only=False)
+        # Opt-in, explicit, and it does what it says.
+        self.assertTrue((workspace / ".env").is_file())
+        self.assertTrue((workspace / "store" / "raw" / "cached.raw").is_file())
+
+    def test_non_git_seed_falls_back_to_directory_copy(self):
+        seed = self.base / "plain"
+        seed.mkdir()
+        (seed / "a.py").write_text("x\n")
+        workspace = self.base / "runs" / "12" / "workspace"
+        seed_workspace(workspace, "charter", seed)
+        self.assertTrue((workspace / "a.py").is_file())
+
+    def test_copy_seed_reports_which_method_it_used(self):
+        seed = self.make_repo_seed()
+        count, method = copy_seed(seed, self.base / "runs" / "13" / "ws")
+        self.assertEqual(method, "git-tracked files only")
+        self.assertEqual(count, 3)  # fetch.py, README.md, .gitignore
+
     def test_refuses_seed_containing_the_workspace(self):
         workspace = self.base / "outer" / "runs" / "1" / "workspace"
         with self.assertRaises(PreflightError):
@@ -699,6 +820,12 @@ def main(argv=None) -> int:
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--charter", default=str(UNIT_ROOT / "CHARTER.example.md"))
     parser.add_argument("--seed", help="directory to COPY into the workspace (never mounted)")
+    parser.add_argument(
+        "--seed-all", action="store_true",
+        help="copy every file in the seed, not just git-tracked ones. Off by "
+             "default because untracked files are where .env, credentials, "
+             "local databases and scraped caches live.",
+    )
     parser.add_argument("--image", default=DEFAULT_IMAGE)
     parser.add_argument("--model", default="qwen2.5-coder:32b")
     parser.add_argument("--ollama-url", default=DEFAULT_OLLAMA)

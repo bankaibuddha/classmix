@@ -146,10 +146,33 @@ Everything lands in `runs/<timestamp>/`: the `workspace` with the agent's git
 history, `broker.jsonl` with every model call, and `report.json` with what
 measurably happened. Review with `git -C runs/<ts>/workspace log -p`.
 
-To point it at a copy of an existing project, `--seed <dir>`. The directory is
-**copied**, never mounted, and its `.git` is excluded so no remote comes with
-it. There is no code path that hands a container a bind mount of a repo you
-care about.
+### Pointing it at a real project
+
+```bash
+python3 harness/run.py \
+  --charter charters/lemon-looker.md \
+  --seed ~/lemon-looker \
+  --model qwen2.5-coder:32b
+```
+
+The seed directory is **copied**, never mounted. When it is a git repository
+only the files git **tracks** are copied, which matters more than it sounds:
+a working clone holds exactly what its `.gitignore` exists to keep out of
+version control, and those are the last things to hand an unattended agent.
+Measured against the real lemon-looker clone, the sandbox receives 9 tracked
+files and none of `store/`, `*.sqlite`, or `.env`.
+
+The tradeoff, because it will bite someone: a file that is new and not yet
+`git add`ed is invisible to the agent. Commit it first, or pass `--seed-all`
+to fall back to a filtered directory copy that includes untracked files.
+
+The copy also drops the seed's `.git`, so no remote comes with it, and the
+harness asserts the workspace has no remote before starting. A sandboxed
+commit has nowhere to go. There is no code path that hands a container a bind
+mount of a repo you care about.
+
+Charters live in `charters/`. `CHARTER.example.md` is a synthetic scratch
+project for proving the sandbox with nothing at stake.
 
 ## Tests
 
@@ -162,22 +185,23 @@ scripts/test-all.sh
 | `harness/scratch.py` | 10 | no | every delete-guard refusal fires; bystander survives |
 | `broker/broker.py` | 10 | no | caps fire; unknown fields and model overrides refused |
 | `agent/agent.py` | 21 | no | parsing, path escapes, binary allowlist, honest commits |
-| `harness/run.py` | 19 | no | every containment flag present; seed copied not mounted |
+| `harness/run.py` | 23 | no | every containment flag present; seed copied not mounted; untracked secrets never reach the sandbox |
 | `tests/test_loop_integration.py` | 7 | no | the real loop over a real socket, end to end |
 | `tests/test_containment.sh` | ~30 | **yes** | each denial actually holds in a live container |
 
-As of 2026-09-11 the 67 non-docker tests pass. **The containment proofs have
+As of 2026-09-11 the 71 non-docker tests pass. **The containment proofs have
 not been run**, because the machine this was written on has the docker CLI but
 no daemon. They are the checks that matter most, so run them on celeste before
 the first real run. `scripts/test-all.sh` exits 3 rather than 0 when they are
 skipped, so an unproven sandbox cannot read as a green one.
 
-Four defects were found by these tests during the build and fixed: a root
+Five defects were found by these tests during the build and fixed: a root
 harness would have produced a root sandbox; a chowned workspace made git
 refuse the harness's own reads; a git failure was silently reported as
 "nothing to commit", which would have produced runs with empty histories and
-no error anywhere; and a containment check that would have passed vacuously
-because the path it tested did not exist.
+no error anywhere; a containment check would have passed vacuously because
+the path it tested was not mounted; and the seed copy would have handed the
+agent every untracked file in the seed, `.env` and local databases included.
 
 ## Honest limits
 
