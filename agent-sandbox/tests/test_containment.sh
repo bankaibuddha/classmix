@@ -30,6 +30,8 @@ SANDBOX=(
   --read-only
   --tmpfs /tmp:rw,noexec,nosuid,size=64m
   -v "${UNIT_ROOT}/agent:/opt/agent:ro"
+  -e "HOST_HOME=${HOME:-/root}"
+  -e "HOST_UNIT_ROOT=${UNIT_ROOT}"
   --pids-limit 128
   --memory 1g
   --pid private
@@ -116,15 +118,24 @@ echo
 echo "host isolation:"
 denied "cannot see host processes" \
   python3 -c 'import os,sys; pids=[p for p in os.listdir("/proc") if p.isdigit()]; sys.exit(0 if len(pids)>20 else 1)'
-denied "no host filesystem mounted" \
-  python3 -c 'import os,sys; sys.exit(0 if os.path.exists("/host") or os.path.exists("/home/user") else 1)'
+# Hardcoding a host path would make this check pass by accident on any box
+# whose layout differs. Pass the REAL paths in and assert they are not
+# reachable: the unit root is genuinely on this host, and /opt/agent is
+# mounted FROM under it, so if the host path itself were visible that would
+# be a real leak rather than a guess that happened to miss.
+denied "host home is not reachable" \
+  python3 -c 'import os,sys; sys.exit(0 if os.path.exists(os.environ["HOST_HOME"]) else 1)'
+denied "host unit root is not reachable" \
+  python3 -c 'import os,sys; sys.exit(0 if os.path.exists(os.environ["HOST_UNIT_ROOT"]) else 1)'
+denied "no conventional host mount points" \
+  python3 -c 'import os,sys; sys.exit(0 if any(os.path.exists(p) for p in ("/host","/hostfs","/mnt/host")) else 1)'
 
 echo
 echo "still usable (a sandbox where nothing works proves nothing):"
 allowed "python runs"       python3 -c 'print(1+1)'
 allowed "git is available"  git --version
 allowed "/tmp is writable"  python3 -c 'open("/tmp/ok","w").write("x")'
-# The real check: the loop's own 18 self-tests pass INSIDE the sandbox, under
+# The real check: the loop's own self-tests pass INSIDE the sandbox, under
 # every flag above. This is what proves the lockdown did not break the agent.
 allowed "agent self-tests pass in the sandbox" python3 /opt/agent/agent.py --self-test
 

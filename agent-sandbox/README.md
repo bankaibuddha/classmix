@@ -11,10 +11,14 @@ it a disposable copy of.
 
 Status: v1 is local-model-only and single-box, targeting celeste (GX10).
 
-> **This is a staged unit, not ClassMix tooling.** It lives in this repo only
-> so it could be built on the designated branch. Under the one-unit-per-repo
-> doctrine it belongs in its own repo. Extract `agent-sandbox/` wholesale; it
-> has no dependency on anything above it.
+Unit stood up 2026-09-11 under the one-unit-per-repo doctrine. Built on a
+branch of the ClassMix repo for want of anywhere else to put it, then
+extracted here with its history intact via `git subtree split`.
+
+`briefings/REGS-COMMON.md` is NOT in this repo yet. It is deployed
+byte-for-byte from the doctrine master and hash-compared by
+`verify-parity.sh`; writing a copy by hand would fail parity on the first
+check. Deploy it from the doctrine unit before dispatching any job here.
 
 ## The three questions
 
