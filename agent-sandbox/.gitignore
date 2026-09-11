@@ -1,0 +1,6 @@
+# Agent run output. Every run writes a workspace, a broker journal and a
+# report here. It is deliberately NOT tracked: the workspaces are disposable
+# by design, and an agent's throwaway history is not this unit's record.
+runs/
+__pycache__/
+*.pyc
