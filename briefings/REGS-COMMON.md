@@ -222,6 +222,36 @@ as one, say so, and proceed against reality.
 - If a claim in this briefing contradicts the code you find, trust the code,
   say so in your report, and proceed against reality.
 
+## A completion needs a verdict (added 2026-09-01 — ST04, JOB-09 VERDICT REQUIRED)
+
+ST04 DOUBLE TIME measured the QA desk's real failure mode: not slow, but
+**skipped under load**. The desk issued 25 same-day verdicts on the
+30-job peak day, yet 6 of that day's 32 jobs fell off the ledger before
+QA ever saw them, and 13 jobs fleet-wide (~10%) carry no recorded
+verification at all. Doubling delivery on that same tracking mechanically
+doubles the unverified count — the precondition the Commander ordered
+closed (B) before delivery volume rises (A).
+
+**The rule: an INDEX row may not assert completion (`done`, `closed`,
+`complete`) without a verification token in the same row** — `QA PASS`,
+`QA ACCEPT`, or `QA ACCEPT-WITH-NOTES`. No token, no closed state — a row
+that reads "done" and nothing else is not done, it is untracked.
+
+**A job that genuinely cannot be independently verified closes as
+`UNVERIFIED-CLOSED (<reason>)`.** This is a legitimate, honest state, not
+a failure — the reason is what makes it honest, and its absence is
+itself a violation (a bare `UNVERIFIED-CLOSED` is an escape hatch, not a
+disposition). Use it when the verifying party, resource, or window is
+gone, not as a substitute for asking the desk.
+
+**The control that fires:** `tools/qa_check.py` reads a unit's
+`briefings/INDEX.md`, flags every completion with no token, and exits 1
+on any. Read-only, stdlib, no unit knowledge — the same house pattern as
+`unitcheck.py` and `jobid_check.py`. It is 9 days younger than the
+ledger it was measured against and has not yet been load-tested at 2×
+delivery; treat a clean run as "nothing missed today," not as a
+guarantee the mechanism holds at double the volume.
+
 ## Harness generations stay out of the record (added 2026-07-31)
 
 A verification/measurement run that generates takes on the live tree
@@ -369,4 +399,15 @@ introduced by the cleanup meant to protect the record.
 4. If you find phantom rows you did not create, report them — do not mend
    another job's mess mid-flight, and do not stay silent because your own
    rows are clean. j154 reported 13 it had not made; that is the standard.
+
+## Sealed voice corpus: owner's eyes only (folded in 2026-10-22 from the motif unit's j181 SEALED ROOM, added there 2026-09-06)
+
+A voice corpus and every draft derived from it are the Commander's eyes
+only. Control reads metadata (paths, sizes, counts, summary lines); troops
+read nothing there; no agent copies, greps, cats, or quotes a corpus file.
+In the motif unit, `tools/corpus_guard.py` is the control that fires; any
+unit that holds such a corpus names its own guard before a troop works near
+it. Folded into the shared regs on the Commander's word (My Desk,
+2026-10-22: "Fold Motif's edits into the shared copy"); it was the motif
+copy's only rule not already in this master.
 <!-- END COMMON REGS -->
